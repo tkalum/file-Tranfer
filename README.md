@@ -17,7 +17,7 @@ Simple command-line file transfer tool that uses mDNS for device discovery on lo
 ## Installation
 ```bash
 git clone https://github.com/tkalum/file-Tranfer.git
-cd fileTransfer
+cd file-Tranfer
 go build ./cmd/file-transfer
 ```
 
