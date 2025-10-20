@@ -55,7 +55,7 @@ func getMode() {
 
 	transferDone := make(chan error, 1)
 	go func() {
-		err := transfer.Listener(transfer.TransferPort)
+		err := transfer.Listener(discovery.ServicePort)
 		transferDone <- err
 	}()
 
@@ -78,14 +78,14 @@ func getMode() {
 	}
 
 	log.Printf("Connecting to %s at %v:%d", firstdevice.Instance, firstdevice.IP, firstdevice.Port)
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", firstdevice.IP.String(), firstdevice.Port))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", firstdevice.IP.String(), discovery.ServicePort))
 	if err != nil {
 		log.Fatalf("❌ Connection error: %v", err)
 	}
 	defer conn.Close()
 	log.Printf("Connected to %s", firstdevice.Instance)
 
-	err = transfer.Listener(discovery.ServicePort)
+	err = transfer.Listener(transfer.TransferPort)
 	if err != nil {
 		log.Fatal(err)
 	}
