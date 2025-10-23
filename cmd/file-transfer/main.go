@@ -53,13 +53,6 @@ func getMode() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	transferDone := make(chan error, 1)
-	go func() {
-		err := transfer.Listener(discovery.ServicePort)
-		transferDone <- err
-	}()
-
-
 	devices, err := discovery.BrowseServices(ctx)
 	if err != nil {
 		log.Fatalf("❌ Browse error: %v", err)
