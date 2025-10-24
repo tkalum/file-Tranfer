@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"strings"
 	
 	"github.com/grandcat/zeroconf"
 )
@@ -16,16 +17,22 @@ type Device struct {
 	Instance string
 	IP net.IP
 	Port int
+	Filename string
+	Filesize string
 }
 
 
-func AnnounceService(instance string) (*zeroconf.Server, error) {
+func AnnounceService(instance string, Filename string, Filesize string) (*zeroconf.Server, error) {
+	matadata := []string{
+		"Filename=" + Filename,
+		"Filesize=" + Filesize,
+	}
 	server, err := zeroconf.Register(
 		instance,
 		ServiceName,
 		"local.",
 		ServicePort,
-		nil,
+		matadata,
 		nil,
 	)
 	if err != nil {
@@ -46,10 +53,24 @@ func BrowseServices(ctx context.Context) (<-chan *Device, error) {
 		defer close(devices)
 		for entry := range entries {
 			log.Printf("Discovered service: %s at %s:%d", entry.Instance, entry.AddrIPv4, entry.Port)
+			
+			mataData := make(map[string]string)
+			for _, txt := range entry.Text {
+				parts := strings.SplitN(txt, "=", 2)
+				if len(parts) == 2 {
+					mataData[parts[0]] = parts[1]
+				}
+			}
+
+			filename := mataData["Filename"]
+			filesize := mataData["Filesize"]
+
 			devices <- &Device{
 				Instance: entry.Instance,
 				IP: entry.AddrIPv4[0],
 				Port: entry.Port,
+				Filename: filename,
+				Filesize: filesize,
 			}
 		}
 	}()

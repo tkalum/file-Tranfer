@@ -28,7 +28,7 @@ func sendMode(args []string) {
 		hostname = "UnknownDevice"
 	}
 
-	announce, err := discovery.AnnounceService(hostname)
+	announce, err := discovery.AnnounceService(hostname, filename, fmt.Sprintf("%d", transfer.GetFileSize(filename)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func getMode() {
 	defer conn.Close()
 	log.Printf("Connected to %s", firstdevice.Instance)
 
-	err = transfer.Listener(transfer.TransferPort)
+	err = transfer.Listener(firstdevice.Filename, firstdevice.Filesize)
 	if err != nil {
 		log.Fatal(err)
 	}

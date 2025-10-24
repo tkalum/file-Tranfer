@@ -18,6 +18,13 @@ import (
 
 const TransferPort = 24243
 
+func GetFileSize(filename string) int64 {
+	fileinfo, err := os.Stat(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fileinfo.Size()
+}
 
 func ReadMessage(conn net.Conn) (string, error) {
 	reader  :=bufio.NewReader(conn)
@@ -30,7 +37,8 @@ func ReadMessage(conn net.Conn) (string, error) {
 	return message, nil
 }
 
-func Listener(port int) error {
+func Listener(filename string, filesize string) error {
+	port := TransferPort 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		fmt.Println("Error starting server:", err)
@@ -40,37 +48,35 @@ func Listener(port int) error {
 
 	fmt.Printf("Server listening on port %d\n", port)
 
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection:", err)
-			continue
-		}
-		go func(c net.Conn) {
-			defer c.Close()
-
-			filename, err := ReadMessage(c)
-			if err != nil {
-				log.Printf("Error reading filename: %v", err)
-				return
-			}
-			
-			filesize , err := ReadMessage(c)
-			if err != nil {
-				log.Printf("Error reading filesize: %v", err)
-				return
-			}
-			log.Printf("Receiving file: %s (%s bytes)\n", filename, filesize)
-
-			err = Receivefile(c, filename, filesize)
-			if err != nil {
-				log.Fatal(err)
-			}
-			
-			fmt.Println("File received successfully")
-		}(conn)
-		
+	conn, err := l.Accept()
+	if err != nil {
+		fmt.Println("Error accepting connection:", err)
+		return err
 	}
+
+	defer conn.Close()
+
+	done := make(chan error, 1)
+
+	go func(c net.Conn) {
+		defer c.Close()
+		log.Println("Connection accepted from", c.RemoteAddr())
+		log.Printf("Receiving file: %s (%s bytes)\n", filename, filesize)
+		
+
+		err = Receivefile(c, filename, filesize)
+		if err != nil {
+			log.Printf("Error receiving file: %v\n", err)
+			done <- err
+			return
+		}
+		
+		fmt.Println("File received successfully")
+		done <- nil
+
+	}(conn)
+	
+	return <-done
 }
 
 func Dialer(filename string, host string) {
@@ -87,21 +93,7 @@ func Dialer(filename string, host string) {
 	}
 	defer conn.Close()
 
-	file , err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	fileinfo, err := file.Stat()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	filesize := fileinfo.Size()
-
-	conn.Write([]byte(filename + "\n"))
-	conn.Write([]byte(fmt.Sprintf("%d\n", filesize)))
+	log.Printf("Sending file: %s\n", filename)
 	err = SendFile(conn, filename)
 	if err != nil {
 		log.Fatal(err)
