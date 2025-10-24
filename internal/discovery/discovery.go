@@ -21,17 +21,62 @@ type Device struct {
 	Filesize string
 }
 
+func findLocalIP(prefix string) net.IP {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	
+	for _, iface := range ifaces {
+		// Skip interfaces that are down or are loopback (127.0.0.1)
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue 
+		}
+		
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		
+		for _, addr := range addrs {
+			var ip net.IP
+			// Extract IP from address structure
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			
+			// Only consider IPv4 addresses and check for the desired Wi-Fi prefix
+			if ip != nil && ip.To4() != nil && strings.HasPrefix(ip.String(), prefix) {
+				return ip
+			}
+		}
+	}
+	return nil
+}
+
 
 func AnnounceService(instance string, Filename string, Filesize string) (*zeroconf.Server, error) {
+	localIP := findLocalIP("192.168.8.") 
+    if localIP == nil {
+        log.Println("❌ Error: Could not find a local IP on the 192.168.8.x network. Check WiFi connection.")
+        return nil, nil
+    }
+	log.Printf("✅ Local IP found: %s\n", localIP.String())
+
 	matadata := []string{
 		"Filename=" + Filename,
 		"Filesize=" + Filesize,
 	}
-	server, err := zeroconf.Register(
+	server, err := zeroconf.RegisterProxy(
 		instance,
 		ServiceName,
 		"local.",
 		ServicePort,
+		localIP.String(),
+		[]string{localIP.String()},
 		matadata,
 		nil,
 	)
