@@ -16,6 +16,12 @@ import (
 
 func sendMode(args []string) {
 	filename := args[0]
+	fileInfo, err := os.Stat(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	filename = fileInfo.Name()
+	filesize := fmt.Sprintf("%d", fileInfo.Size())
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", discovery.ServicePort))
 	if err != nil {
@@ -28,7 +34,7 @@ func sendMode(args []string) {
 		hostname = "UnknownDevice"
 	}
 
-	announce, err := discovery.AnnounceService(hostname, filename, fmt.Sprintf("%d", transfer.GetFileSize(filename)))
+	announce, err := discovery.AnnounceService(hostname, filename, filesize)
 	if err != nil {
 		log.Fatal(err)
 	}
