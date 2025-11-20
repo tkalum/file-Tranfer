@@ -15,12 +15,12 @@ import (
 )
 
 func sendMode(args []string) {
-	filename := args[0]
-	fileInfo, err := os.Stat(filename)
+	file := args[0]
+	fileInfo, err := os.Stat(file)
 	if err != nil {
 		log.Fatal(err)
 	}
-	filename = fileInfo.Name()
+	filename := fileInfo.Name()
 	filesize := fmt.Sprintf("%d", fileInfo.Size())
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", discovery.ServicePort))
@@ -50,7 +50,7 @@ func sendMode(args []string) {
 	ip := conn.RemoteAddr().(*net.TCPAddr).IP.String()
 	log.Printf("Connection established with %s", ip)
     
-	transfer.Dialer(filename, ip)
+	transfer.Dialer(file, ip)
 	
 	log.Println("File sent successfully")
 }
