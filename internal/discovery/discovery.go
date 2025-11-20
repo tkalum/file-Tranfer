@@ -59,7 +59,7 @@ func findLocalIP(prefix string) net.IP {
 
 
 func AnnounceService(instance string, Filename string, Filesize string) (*zeroconf.Server, error) {
-	localIP := findLocalIP("192.168.8.") 
+	localIP := findLocalIP("192.168.") 
     if localIP == nil {
         log.Println("❌ Error: Could not find a local IP on the 192.168.8.x network. Check WiFi connection.")
         return nil, nil
